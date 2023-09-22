@@ -1,0 +1,10 @@
+{
+    "name": "sit314 final project",
+   "main": "server.js",
+    "dependencies": {
+      "express": "^4.18.2",
+      "mqtt": "^5.0.5",
+      "socket.io": "^4.7.2",
+      "body-parser": "^4.2.7"
+    }
+  }

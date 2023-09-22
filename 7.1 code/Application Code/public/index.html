@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Light Control</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="mqttCredentialsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <label for="mqttUsername">MQTT Username:</label>
+            <input type="text" id="mqttUsername" name="username"><br><br>
+            <label for="mqttPassword">MQTT Password:</label>
+            <input type="password" id="mqttPassword" name="password"><br><br>
+            <button id="submitCredentialsBtn">Submit</button>
+        </div>
+    </div>
+
+    <div class='top-container'>
+        <h1>Lighting for 1A Example Street</h1>
+    </div>
+
+    <div class='middle-container'>
+        <div class='switch1-container'>
+            <div class='switch1label'>Hallway Light</div>
+            <div class="onoffswitch">
+                <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="hallwayLED" tabindex="0" checked>
+                <label class="onoffswitch-label" for="hallwayLED">
+                    <span class="onoffswitch-inner"></span>
+                    <span class="onoffswitch-switch"></span>
+                </label>
+            </div>
+        </div>
+
+        <div class='switch2-container'>
+            <div class='switch2label'>Front Room Light</div>
+            <div class="onoffswitch">
+                <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="frontroomLED" tabindex="0" checked>
+                <label class="onoffswitch-label" for="frontroomLED">
+                    <span class="onoffswitch-inner"></span>
+                    <span class="onoffswitch-switch"></span>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class='bottom-container'>
+        <p class="left-footer">Emily Gray</p>
+        <p class="center-footer">SIT314 Software Architecture and Scalability for IoT</p>
+        <p class="right-footer">220202231</p>
+    </div>
+
+    <script type="module" src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+</body>
+
+</html>
