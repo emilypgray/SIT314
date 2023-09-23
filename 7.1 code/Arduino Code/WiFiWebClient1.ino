@@ -19,7 +19,7 @@ const char pass[] = SECRET_PASS;
 int status = WL_IDLE_STATUS;
 // int keyIndex = 0;  
 
-// broker options
+// broker options - connect to mosquitto broker on AWS EC2 instance
 const char* broker = "ec2-3-27-123-38.ap-southeast-2.compute.amazonaws.com";
 const int port = 1883;
 
@@ -67,6 +67,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(switchPin1), toggleLed1, RISING); // only interrup if the button is being pushed (not released)
   attachInterrupt(digitalPinToInterrupt(switchPin2), toggleLed2, RISING);
 
+  // handle messages received from broker
   mqttClient.onMessage(onMqttMessage);
 }
 
@@ -74,8 +75,6 @@ void loop() {
 
   mqttClient.poll();
 
-  // if there are incoming bytes available
-  // from the server, read them and print them:
   while (client.available()) {
     char c = client.read();
     Serial.write(c);
@@ -86,16 +85,19 @@ void loop() {
     connectToBroker(); // Try reconnecting to the broker
   }
 
+  // check whether time since last run if greater than or equal to the specified interval
+  // only run publish functions if it is - this saves the arduino from publishing every loop
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     publishToBroker(ledState1, led_hallway_state);
     publishToBroker(ledState2, led_frontroom_state);
+    previousMillis = currentMillis;
   }
 
 
 }
 
-
+// toggle the state of the LED and write the current state out to the LED
 void toggleLed1(){
   ledState1 = !ledState1;
   digitalWrite(led1, ledState1);
@@ -148,7 +150,7 @@ void onMqttMessage(int messageSize) {
   for (int i = 0; i < messageSize; i++) {
     payload += (char)mqttClient.read();
   }
-
+ // if topic is in the /command group of topics, toggle the state of the relevant LED
   if (topic == led_hallway_command) {
     Serial.print("message received for led 1 with command: ");
     Serial.println(payload);
