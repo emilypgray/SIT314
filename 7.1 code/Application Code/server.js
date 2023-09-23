@@ -1,3 +1,4 @@
+// import required modules
 const express = require('express');
 const bodyParser = require('body-parser');
 const mqtt = require('mqtt');
@@ -54,7 +55,7 @@ app.post('/set-mqtt-credentials', (req, res) => {
     res.sendStatus(200);
 });
 
-// Store clients because we need to broadcast to all connected clients
+// Store clients so that messages can be broadcasted to all connected clients
 const clients = [];
 
 app.get('/events', (req, res) => {
@@ -75,6 +76,7 @@ app.get('/events', (req, res) => {
     });
 });
 
+// published new state of light (from web app) to the broker
 app.post('/process-form', (req, res) => {
     const formData = req.body;
     const topic = formData.lightId === 'hallwayLED' ? '/sensors/leds/hallway/command' : '/sensors/leds/frontroom/command';
