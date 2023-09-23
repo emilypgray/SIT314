@@ -12,8 +12,8 @@ RUN npm install
 # Copy the rest of the application's files to the working directory
 COPY . .
 
-# Expose port 3000 for the Express app to listen on
-EXPOSE 3000
+# Expose port 443 for the Express app to listen on
+EXPOSE 443
 
 # Start the Express app
 CMD ["node", "server.js"]
