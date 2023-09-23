@@ -42,7 +42,7 @@ WiFiClient client;
 MqttClient mqttClient(client);
 
 // from examples > 02.Digital > blinkWithoutDelay
-const long interval = 1000;
+const long interval = 750;
 unsigned long previousMillis = 0;
 
 void setup() {
