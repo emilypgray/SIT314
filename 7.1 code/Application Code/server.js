@@ -3,13 +3,19 @@ const bodyParser = require('body-parser');
 const mqtt = require('mqtt');
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
+
 const app = express();
-const port = 3000;
-const IPv4_HOST = '0.0.0.0';
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+// Create an HTTPS server with self-signed certificate
+const httpsServer = https.createServer({
+    key: fs.readFileSync('server_certs/Key.pem'),
+    cert: fs.readFileSync('server_certs/Cert.pem'),
+}, app);
 
 let client;
 let storedCredentials = JSON.parse(fs.readFileSync('credentials.json', 'utf-8'));
@@ -17,6 +23,7 @@ let storedCredentials = JSON.parse(fs.readFileSync('credentials.json', 'utf-8'))
 app.post('/set-credentials', (req, res) => {
     const { username, password } = req.body;
 
+    // check entered credentials are correct
     if (username === storedCredentials.username && password === storedCredentials.password) {
         console.log('Login Successful');
         // Disconnect from previous MQTT connection if it exists
@@ -90,6 +97,7 @@ app.post('/process-form', (req, res) => {
     res.send('Form data received and message sent to MQTT broker.');
 });
 
-app.listen(port, IPv4_HOST, () => {
-    console.log(`Server is running on port ${port}`);
+// Listen on the HTTPS server
+httpsServer.listen(443, null, () => {
+    console.log('HTTPS Server is running on port 443');
 });
