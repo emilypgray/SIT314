@@ -1,58 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const modal = document.getElementById('mqttCredentialsModal');
-    const submitBtn = document.getElementById('submitCredentialsBtn');
-    const usernameField = document.getElementById('mqttUsername');
-    const passwordField = document.getElementById('mqttPassword');
-    const closeModalBtn = document.querySelector('.close');
-
-    // Show the modal upon page loading
-    modal.style.display = 'block';
-
-    // Close the modal when the 'x' button is clicked
-    closeModalBtn.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-
-    function submitCredentials() {
-        const credentials = {
-            username: usernameField.value,
-            password: passwordField.value
-        };
-        // post credentials to server
-        fetch('/set-credentials', { 
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(credentials)
-        })
-        .then(response => {
-            if (response.status !== 200) {
-                return response.json().then(err => {
-                    throw new Error(err.message || 'Login failed');
-                });
-            }
-            modal.style.display = 'none';
-            setTimeout(establishEventSource, 2000);
-        })
-        .catch(error => {
-            console.error('Error:', error.message);
-            alert(error.message);
-        });
-    }
-    submitBtn.addEventListener('click', submitCredentials);
-
+    // Establish the EventSource connection on page load
+    establishEventSource();
 
     function establishEventSource() {
         const hallwayLED = document.getElementById('hallwayLED');
         const frontroomLED = document.getElementById('frontroomLED');
         const eventSource = new EventSource('/events');
 
-        // when a message is received from the broker, check the state of the switches
-        // to see if they match the state of the light
         eventSource.onmessage = (event) => {
             const { topic, message } = JSON.parse(event.data);
-
+            // update the position of the switches based on message received from server-side
             if (topic === '/sensors/leds/hallway/state') {
                 hallwayLED.checked = message === '1';
             } else if (topic === '/sensors/leds/frontroom/state') {
@@ -65,19 +22,18 @@ document.addEventListener('DOMContentLoaded', () => {
             eventSource.close();
         };
 
-        // add event listeners for the toggle switches
+        // add event listeners for the switches on the webpage
         hallwayLED.addEventListener('change', toggleLightState);
         frontroomLED.addEventListener('change', toggleLightState);
     }
 
     function toggleLightState(event) {
-
         const light = event.target;
         const message = light.checked ? 'on' : 'off';
         const lightId = light.id;
-
-        // post the state of the toggle switch to the server when a change happens
-        fetch('/process-form', { 
+        
+        // send the new state of the switch to the server-side to publish
+        fetch('/process-form', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -89,8 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => {
             if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error(text || 'Server Error');
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Server Error');
                 });
             }
             // Check if the response is JSON before parsing
