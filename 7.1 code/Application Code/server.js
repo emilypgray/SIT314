@@ -4,7 +4,6 @@ const mqtt = require('mqtt');
 const path = require('path');
 const fs = require('fs');
 const https = require('https');
-const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -12,69 +11,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// Create HTTPS server with self-signed certificate
+// Create an HTTPS server with self-signed certificate
 const httpsServer = https.createServer({
     key: fs.readFileSync('server_certs/Key.pem'),
     cert: fs.readFileSync('server_certs/Cert.pem'),
 }, app);
 
 let client;
-
-// Load the hashed password from the passwords.txt file
-const passwordFileData = fs.readFileSync('passwords.txt', 'utf-8');
-const [storedUsername, storedHashedPassword] = passwordFileData.split(':');
-
-app.post('/set-credentials', async (req, res) => {
-    const { username, password } = req.body;
-
-    try {
-        // Compare the entered password with the stored hashed password
-        const passwordMatch = await bcrypt.compare(password, storedHashedPassword);
-
-        if (username === storedUsername && passwordMatch) {
-            console.log('Login Successful');
-            // Disconnect from previous MQTT connection if it exists
-            if (client && client.connected) {
-                client.end();
-            }
-
-            // Connect to MQTT
-            const mqttBrokerOptions = {
-                hostname: 'a3kvpx8bd0q9lp-ats.iot.ap-southeast-2.amazonaws.com',
-                port: 8883,
-                clientId: 'server_client',
-                protocol: 'mqtts',
-                key: fs.readFileSync('certs/private.pem.key'),
-                cert: fs.readFileSync('certs/device.pem.crt'),
-                ca: fs.readFileSync('certs/Amazon-root-CA-1.pem'),
-            };
-
-            client = mqtt.connect(mqttBrokerOptions);
-
-            client.on('connect', () => {
-                console.log('Connected to MQTT broker');
-                // on connect, subscribe to state topics
-                client.subscribe('/sensors/leds/hallway/state');
-                client.subscribe('/sensors/leds/frontroom/state');
-            });
-
-            client.on('message', (topic, message) => {
-                clients.forEach(clientRes => {
-                    clientRes.write(`data: ${JSON.stringify({ topic, message: message.toString() })}\n\n`);
-                });
-            });
-
-            res.sendStatus(200);
-        } else {
-            res.status(401).send('Invalid credentials');
-        }
-    } catch (error) {
-        console.error('Error:', error.message);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-const clients = [];
 
 app.get('/events', (req, res) => {
     if (!client || !client.connected) {
@@ -105,10 +48,41 @@ app.post('/process-form', (req, res) => {
     const topic = formData.lightId === 'hallwayLED' ? '/sensors/leds/hallway/command' : '/sensors/leds/frontroom/command';
     const light = formData.lightState === 'on' ? '1' : '0';
 
-    // publish information received from client-side to broker
+    // Publish MQTT message
     client.publish(topic, light, { qos: 1 });
-    res.send('Form data received and message sent to MQTT broker.');
+
+    // Send a response to the client
+    res.status(200).json({ message: 'Form data received and message sent to MQTT broker.' });
 });
+
+// Connect to MQTT on server startup
+const mqttBrokerOptions = {
+    hostname: 'a3kvpx8bd0q9lp-ats.iot.ap-southeast-2.amazonaws.com',
+    port: 8883,
+    clientId: 'server_client',
+    protocol: 'mqtts',
+    key: fs.readFileSync('certs/private.pem.key'),
+    cert: fs.readFileSync('certs/device.pem.crt'),
+    ca: fs.readFileSync('certs/Amazon-root-CA-1.pem'),
+};
+
+client = mqtt.connect(mqttBrokerOptions);
+
+client.on('connect', () => {
+    console.log('Connected to MQTT broker');
+    // subscribe to state topics
+    client.subscribe('/sensors/leds/hallway/state');
+    client.subscribe('/sensors/leds/frontroom/state');
+});
+
+client.on('message', (topic, message) => {
+    // send received message to client-side program
+    clients.forEach(clientRes => {
+        clientRes.write(`data: ${JSON.stringify({ topic, message: message.toString() })}\n\n`);
+    });
+});
+
+const clients = [];
 
 // Listen on the HTTPS server
 httpsServer.listen(443, null, () => {
