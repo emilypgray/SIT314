@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // get element ids from index.html
+
   const modal = document.getElementById('mqttCredentialsModal');
   const submitBtn = document.getElementById('submitCredentialsBtn');
   const usernameField = document.getElementById('mqttUsername');
@@ -7,13 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const closeModalBtn = document.querySelector('.close');
 
   function submitCredentials() {
-    // get credentials entered by user on webapge
       const mqttCredentials = {
           username: usernameField.value,
           password: passwordField.value
       };
 
-    // send credentials to server-side
       fetch('/set-mqtt-credentials', {
           method: 'POST',
           headers: {
@@ -33,12 +31,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Attach the submit function to the button
   submitBtn.addEventListener('click', submitCredentials);
 
-  // get light ids
   const hallwayLED = document.getElementById('hallwayLED');
   const frontroomLED = document.getElementById('frontroomLED');
   const eventSource = new EventSource('/events');
 
-  // update switches on page when message received from broker indicating change of state
   eventSource.onmessage = (event) => {
       const { topic, message } = JSON.parse(event.data);
       console.log(`Received message on ${topic}: ${message}`);
@@ -55,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
       eventSource.close();
   };
 
-  // add event listeners for switches. publish changes in state to broker
   hallwayLED.addEventListener('change', () => {
       const message = hallwayLED.checked ? 'on' : 'off';
       fetch('/process-form', {
